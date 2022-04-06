@@ -1,0 +1,88 @@
+﻿#define THREADS 8
+
+#include "UnityCG.cginc"
+#include "SimplexNoiseGrad3D.cginc"
+
+struct Particle
+{
+	float3 Position;
+	float3 Velocity;
+	float LifeRandom;
+	float Time;	
+};
+
+struct ButterflyParticle
+{
+	float Weight;
+	float Life;
+	float Size;
+};
+
+float _TimeFlow;
+float _Amplitude;
+float _Frequency;
+float4x4 _LocalToWorld;
+StructuredBuffer<ButterflyParticle> _Variant;
+RWStructuredBuffer<Particle> _ParticleBuffer;
+RWStructuredBuffer<float3> _PositionBuffer;
+
+float calc_amplitude(float3 p)
+{
+	float z = mul(_LocalToWorld, float4(p, 1.0)).z;
+	return clamp(z + 0.5, 0.5, 2);
+}
+
+#pragma kernel ComputeParticles
+[numthreads(THREADS, 1, 1)]
+void ComputeParticles(uint3 id : SV_DispatchThreadID)
+{
+	// id.x
+	int idx = id.x;
+	
+	// var dt = Time.deltaTime;
+	// var time = Time.timeSinceLevelLoad;
+	float t = _Time.y;
+	float dt = unity_DeltaTime.x;
+
+	Particle p = _ParticleBuffer[idx];
+	float life = _Variant[0].Life * p.LifeRandom;
+
+	// var basePos = vertices[index].basePos;
+	// var currPos = vertices[index].localPos;
+	float3 pos = _PositionBuffer[idx];
+	float3 acc = snoise_grad(pos * t * _Frequency) * _Amplitude;
+
+	dt *= calc_amplitude(pos);
+
+	if (p.Time > 0.1)
+	{
+		p.Velocity += acc * dt;
+	}
+	else
+	{
+		p.Velocity = (float3)0;
+	}
+
+	if (_TimeFlow > 0)
+	{
+		p.Time += dt;
+		pos += p.Velocity * dt;
+	}
+	
+	// p.Time += (_TimeFlow > 0) ? dt : -dt;	
+	// p.Time = Mathf.Clamp(particle.Time, 0, 2F * life);
+
+	// if (_TimeFlow > 0 || (basePos - currPos).sqrMagnitude > 1e-1F)
+	// {
+	// 	var invVelocity = (basePos - currPos) + timeFlow * particle.Velocity;
+	// 	currPos += Math.Lerp(invVelocity * dt, particle.Velocity * dt, timeFlow);
+	// }
+	// else
+	// {
+	// 	currPos = basePos;
+	// }
+
+	_ParticleBuffer[idx] = p;
+	_PositionBuffer[idx] = pos;
+	// vertices[index].localPos = currPos;
+}
