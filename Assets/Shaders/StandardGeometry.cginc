@@ -119,43 +119,36 @@ void Geometry(
 )
 {
 	int index = pid;
-	// if (index >= _NumParticles)
-	// 	index = _NumParticles - 1;
-
 	Particle p = _ParticleBuffer[index];
+
+	float pTime = _LocalTime;
 	// Scaling with simple lerp	
 	// float t_s = p.Time / (_Variant[0].Life * p.LifeRandom);
-	float t_s = p.Time / _Variant[0].Life;
-	float size = _Variant[0].Size * max(1e-2F, 1.0 - t_s);
-	// float size = 1.0;
+	float t_s = pTime / 4.0;
+	// float size = _Variant[0].Size * max(1e-2F, 1.0 - t_s);
+	float size = 0.15 * max(0.01, 1.0 - t_s);
+	
 
 	// Look-at matrix from velocity
-	float3 az = p.Velocity + (float3)0.001;
-	// float3 az = (float3)0 + (float3)0.001;
+	float3 az = p.Velocity + (float3)0.001;	
 	float3 ax = cross(float3(0, 1, 0), az);
 	float3 ay = cross(az, ax);
 	
 	// Flapping
-	// float freq = 8 + Random.Value01(pid + 10000) * 20;
-	float freq = 8 + nrand((float2)0, pid + 10000) * 20;	
-	// float freq = 8;
-	// float flap = sin(freq * _ElapsedTime);
-	float flap = sin(freq * p.Time);
+	float freq = 8 + nrand((float2)0, pid + 10000) * 20;
+	float flap = sin(freq * pTime);
 
 	// Axis vectors
 	ax = normalize(ax) * size;
 	ay = normalize(ay) * size * flap;
 	az = normalize(az) * size;
 
-	// Vertices
-	// var pos = p.Pos;
+	// Vertices	
 	float3 pos = _PositionBuffer[index];
-	// float3 pos = (float3)0;
-
+	
 	float3 p0 = input[0].position.xyz;
 	float3 p1 = input[1].position.xyz;
-	float3 p2 = input[2].position.xyz;
-	// float3 pc = (p0 + p1 + p2) / 3.0;
+	float3 p2 = input[2].position.xyz;	
 
 	float3 va1 = pos + p0;
 	float3 va2 = pos + p1;
@@ -168,7 +161,16 @@ void Geometry(
 	float3 vb5 = vb3 + ax * 2;
 	float3 vb6 = vb4 + ax * 2;
 
-	float p_t = saturate(p.Time);
+	/*
+	           vb4      vb6
+              /   \   /    /
+			vb3	--- vb2 vb5
+			   \   /    / 
+			     vb1 --   
+	 */
+
+
+	float p_t = saturate(pTime);
 	float3 v1 = lerp(va1, vb1, p_t);
 	float3 v2 = lerp(va2, vb2, p_t);
 	float3 v3 = lerp(va3, vb3, p_t);
@@ -176,30 +178,53 @@ void Geometry(
 	float3 v5 = lerp(va3, vb5, p_t);
 	float3 v6 = lerp(va3, vb6, p_t);
 
-	float2 uv1 = float2((float)pid/768.0, 0);// input[0].texcoord;
-	float2 uv2 = float2((float)pid/768.0, 0);// input[1].texcoord;
-	float2 uv3 = float2((float)pid/768.0, 0);// input[2].texcoord;
-	
+	// float2 uv1 = input[0].texcoord;
+	// float2 uv2 = input[1].texcoord;
+	// float2 uv3 = input[2].texcoord;
+	float2 uv1 = float2(p.Position.xy)/12;
+	float2 uv2 = float2(p.Position.xy)/12;
+	float2 uv3 = float2(p.Position.xy)/12;
+
 	float3 n1 = input[0].normal;
 	float3 n2 = input[1].normal;
 	float3 n3 = input[2].normal;
+	// float3 n = -normalize(cross(v2 - v1, v3 - v1));
+	// float3 n1 = n;
+	// float3 n2 = n;
+	// float3 n3 = n;
 
 	// Output
 	outStream.Append(VertexOutput(v1, n1, uv1));
-	outStream.Append(VertexOutput(v2, n2, uv2));
-	outStream.Append(VertexOutput(v5, n3, uv3));
+	outStream.Append(VertexOutput(v3, n3, uv2));
+	outStream.Append(VertexOutput(v2, n2, uv3));
+
+	outStream.Append(VertexOutput(v2, n2, uv1));
+	outStream.Append(VertexOutput(v3, n3, uv2));
+	outStream.Append(VertexOutput(v4, n3, uv3));
+
+	outStream.Append(VertexOutput(v1, n1, uv1));
+	outStream.Append(VertexOutput(v5, n3, uv2));
+	outStream.Append(VertexOutput(v2, n2, uv3));
 	
-	outStream.Append(VertexOutput(v5, n3, uv3));
-	outStream.Append(VertexOutput(v2, n2, uv2));
+	outStream.Append(VertexOutput(v2, n2, uv1));
+	outStream.Append(VertexOutput(v5, n3, uv2));
 	outStream.Append(VertexOutput(v6, n3, uv3));
-							  
-	outStream.Append(VertexOutput(v3, n3, uv3));
-	outStream.Append(VertexOutput(v4, n3, uv3));
-	outStream.Append(VertexOutput(v1, n1, uv1));
-						  
-	outStream.Append(VertexOutput(v1, n1, uv1));
-	outStream.Append(VertexOutput(v4, n3, uv3));
-	outStream.Append(VertexOutput(v2, n2, uv2));
+
+	// outStream.Append(VertexOutput(v1, n1, uv1));
+	// outStream.Append(VertexOutput(v2, n2, uv2));
+	// outStream.Append(VertexOutput(v5, n3, uv3));
+	//
+	// outStream.Append(VertexOutput(v5, n3, uv3));
+	// outStream.Append(VertexOutput(v2, n2, uv2));
+	// outStream.Append(VertexOutput(v6, n3, uv3));
+	// 						  
+	// outStream.Append(VertexOutput(v3, n3, uv3));
+	// outStream.Append(VertexOutput(v4, n3, uv3));
+	// outStream.Append(VertexOutput(v1, n1, uv1));
+	// 					  
+	// outStream.Append(VertexOutput(v1, n1, uv1));
+	// outStream.Append(VertexOutput(v4, n3, uv3));
+	// outStream.Append(VertexOutput(v2, n2, uv2));
 }
 
 #else
@@ -223,17 +248,23 @@ void Geometry(
 	ext *= 1 + 0.3 * sin(pid * 832.37843 + _LocalTime * 88.76);
 
 	// Extrusion points
-	float3 offs = ConstructNormal(wp0, wp1, wp2) * ext;
-	float3 wp3 = wp0 + offs;
-	float3 wp4 = wp1 + offs;
-	float3 wp5 = wp2 + offs;
+	// float3 offs = ConstructNormal(wp0, wp1, wp2) * ext;
+	// float3 wp3 = wp0 + offs;
+	// float3 wp4 = wp1 + offs;
+	// float3 wp5 = wp2 + offs;
 
 	// Cap triangle
-	float3 wn = ConstructNormal(wp3, wp4, wp5);
-	float np = saturate(ext * 10);
-	float3 wn0 = lerp(input[0].normal, wn, np);
-	float3 wn1 = lerp(input[1].normal, wn, np);
-	float3 wn2 = lerp(input[2].normal, wn, np);
+	// float3 wn = ConstructNormal(wp3, wp4, wp5);
+	// float np = saturate(ext * 10);
+	
+	// float3 wn0 = lerp(input[0].normal, wn, np);
+	// float3 wn1 = lerp(input[1].normal, wn, np);
+	// float3 wn2 = lerp(input[2].normal, wn, np);
+	float3 n = -normalize(cross(v2 - v1, v3 - v1));
+	float3 wn0 = n;
+	float3 wn1 = n;
+	float3 wn2 = n;
+
 	outStream.Append(VertexOutput(wp3, wn0, input[0].tangent, uv0));
 	outStream.Append(VertexOutput(wp4, wn1, input[1].tangent, uv1));
 	outStream.Append(VertexOutput(wp5, wn2, input[2].tangent, uv2));

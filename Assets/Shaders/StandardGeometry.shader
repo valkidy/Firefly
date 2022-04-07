@@ -6,7 +6,7 @@
 		_MainTex("Albedo", 2D) = "white" {}
 
 		[Space]
-		_LocalTime("Animation Time", Float) = 0.0
+		_LocalTime("Animation Time", Range(0, 4)) = 0.0
 		_ElapsedTime("Particle Time", Range(0, 1)) = 0.0
 	}
 		SubShader

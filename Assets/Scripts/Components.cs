@@ -86,7 +86,30 @@ namespace Firefly
             indices.Add(i);
             indices.Add(i + 1);
             indices.Add(i + 2);
-        }    
+        }
+
+        public void AddTriangle(
+            Vector3 v1,  Vector3 v2,  Vector3 v3, 
+            Vector2 uv1, Vector2 uv2, Vector2 uv3,
+            Vector3 n1,  Vector3 n2,  Vector3 n3)
+        {
+            vertices.Add(v1);
+            vertices.Add(v2);
+            vertices.Add(v3);
+
+            uv.Add(uv1);
+            uv.Add(uv2);
+            uv.Add(uv3);
+
+            normals.Add(n1);
+            normals.Add(n2);
+            normals.Add(n3);
+
+            var i = indices.Count;
+            indices.Add(i);
+            indices.Add(i + 1);
+            indices.Add(i + 2);
+        }
     }
 
     struct Particle

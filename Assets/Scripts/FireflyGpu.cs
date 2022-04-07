@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using Firefly;
+using System.Collections;
 using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using UnityEngine;
@@ -26,7 +27,8 @@ public class FireflyGpu : MonoBehaviour
     [Range(0, 1)] public float ElapsedTime = 0;
     
     public ComputeShader KernelShader;
-    public Material materal;
+    public Material material;
+    BulkMesh bulkMesh;
 
     ComputeBuffer Variant;
     ComputeBuffer ParticleBuffer;
@@ -48,21 +50,51 @@ public class FireflyGpu : MonoBehaviour
         var mesh = GetComponent<MeshFilter>().sharedMesh;
         Vector3[] vertices = mesh.vertices;
         int[] indices = mesh.GetIndices(0);
-        BufferSize = 18 * indices.Length/3;
+        Vector3[] normals = mesh.normals;
+
+        BufferSize = indices.Length / 3;
+        Debug.Log(vertices.Length + ", " + indices.Length + ", " + BufferSize);
+
         PositionData = new Vector3[BufferSize];
-        for (int i = 0; i < BufferSize/ 18; ++i) {
+        for (int i = 0; i < BufferSize; ++i) {
             var v0 = vertices[indices[3 * i + 0]];
             var v1 = vertices[indices[3 * i + 1]];
             var v2 = vertices[indices[3 * i + 2]];
             PositionData[i] = (v0 + v1 + v2) / 3F;
         }
-        
+
+        bulkMesh = new BulkMesh();
+        for (int i = 0; i < BufferSize; ++i)
+        {
+            var v0 = vertices[indices[3 * i + 0]];
+            var v1 = vertices[indices[3 * i + 1]];
+            var v2 = vertices[indices[3 * i + 2]];
+            var vc = (v0 + v1 + v2) / 3F;
+            // var vc = Vector3.zero;
+            var n0 = normals[indices[3 * i + 0]];
+            var n1 = normals[indices[3 * i + 1]];
+            var n2 = normals[indices[3 * i + 2]];
+
+            bulkMesh.AddTriangle(
+                v0 - vc, v1 - vc, v2 - vc, 
+                Vector2.zero, Vector2.zero, Vector2.zero,
+                n0, n1, n2);
+        }
+        bulkMesh.Build();
+
         // TODO: Init in compute shader
         PositionBuffer = new ComputeBuffer(BufferSize, Marshal.SizeOf(typeof(Vector3)));
         PositionBuffer.SetData(PositionData);
 
         ParticleBuffer = new ComputeBuffer(BufferSize, Marshal.SizeOf(typeof(Particle)));
         ParticleData = new Particle[BufferSize];
+        for (int i = 0; i < BufferSize; ++i)
+        {
+            ParticleData[i].LifeRandom = 0.001F;
+            ParticleData[i].Velocity = Vector3.zero;
+            ParticleData[i].Position = Vector3.one * i;
+            ParticleData[i].Time = 0;
+        }
         ParticleBuffer.SetData(ParticleData);
 
         Variant = new ComputeBuffer(1, Marshal.SizeOf(typeof(ButterflyParticle)));
@@ -101,15 +133,15 @@ public class FireflyGpu : MonoBehaviour
         // Debug.Log(PositionData[0]);
         // Debug.Log("BufferSize=" + BufferSize);
 
-        materal.SetInt("_NumParticles", BufferSize);
-        materal.SetBuffer("_ParticleBuffer", ParticleBuffer);
-        materal.SetBuffer("_PositionBuffer", PositionBuffer);
-        materal.SetBuffer("_Variant", Variant);
-        materal.SetFloat("_ElapsedTime", ElapsedTime);        
+        material.SetInt("_NumParticles", BufferSize);
+        material.SetBuffer("_ParticleBuffer", ParticleBuffer);
+        material.SetBuffer("_PositionBuffer", PositionBuffer);
+        material.SetBuffer("_Variant", Variant);
+        material.SetFloat("_ElapsedTime", ElapsedTime);        
     }
     
     void Update()
     {
-        
+        Graphics.DrawMesh(bulkMesh.mesh, Matrix4x4.identity, material, 0);
     }
 }

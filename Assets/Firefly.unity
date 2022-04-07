@@ -132,7 +132,6 @@ GameObject:
   - component: {fileID: 137408860}
   - component: {fileID: 137408859}
   - component: {fileID: 137408858}
-  - component: {fileID: 137408857}
   - component: {fileID: 137408861}
   m_Layer: 0
   m_Name: Sphere
@@ -141,19 +140,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!135 &137408857
-SphereCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 137408856}
-  m_Material: {fileID: 0}
-  m_IsTrigger: 0
-  m_Enabled: 1
-  serializedVersion: 2
-  m_Radius: 0.5
-  m_Center: {x: 0, y: 0, z: 0}
 --- !u!23 &137408858
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -161,7 +147,7 @@ MeshRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 137408856}
-  m_Enabled: 1
+  m_Enabled: 0
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
@@ -232,7 +218,7 @@ MonoBehaviour:
   Amplitude: 10
   ElapsedTime: 0
   KernelShader: {fileID: 7200000, guid: 4d3f3a3edb3878840903e4123bcdbd8d, type: 3}
-  materal: {fileID: 2100000, guid: b804b5381fa392e458885e0d3202b28c, type: 2}
+  material: {fileID: 2100000, guid: b804b5381fa392e458885e0d3202b28c, type: 2}
 --- !u!1 &502446853
 GameObject:
   m_ObjectHideFlags: 0
