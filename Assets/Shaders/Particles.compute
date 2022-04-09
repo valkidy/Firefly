@@ -10,7 +10,7 @@ float _Frequency;
 float4x4 _LocalToWorld;
 StructuredBuffer<int> _IndicesData;
 StructuredBuffer<float4> _VerticesData;
-StructuredBuffer<ButterflyParticle> _Variant;
+StructuredBuffer<ParticleVariant> _Variant;
 RWStructuredBuffer<Particle> _ParticleBuffer;
 RWStructuredBuffer<float3> _VertexBuffer;
 
@@ -55,8 +55,8 @@ void ComputeParticles(uint3 id : SV_DispatchThreadID)
 	float dt = unity_DeltaTime.x;
 
 	Particle p = _ParticleBuffer[idx];
-	float life = _Variant[0].Life * p.LifeRandom;
-	
+
+	float life = _Variant[0].Life * p.LifeRandom;	
 	float3 pos = p.Position;
 	float3 acc = snoise_grad(pos * t * _Frequency) * _Amplitude;
 
@@ -70,27 +70,23 @@ void ComputeParticles(uint3 id : SV_DispatchThreadID)
 	{
 		p.Velocity = (float3)0;
 	}
-
-	if (_TimeFlow > 0)
-	{
-		p.Time += dt;
-		pos += p.Velocity * dt;
-	}
 	
 	// Equals to (_TimeFlow > 0) ? dt : -dt
-	p.Time += (2 * sign(_TimeFlow) - 1) * dt;
-	p.Time = clamp(p.Time, 0, 2.0 * life);
+	p.Time += 4.0 * (2 * sign(_TimeFlow) - 1) * dt;
+	p.Time = clamp(p.Time, 0, 1.2 * life);
 
-	float3 dir = _VertexBuffer[idx] - p.Position;
-	if (_TimeFlow > 0 || dot(dir, dir) > 1e-1F)
+	float3 dir = _VertexBuffer[idx] - pos;
+	if (_TimeFlow > 0 || dot(dir, dir) > 0.1)
 	{
-		float3 invVelocity = dir + _TimeFlow * p.Velocity;
-		p.Position += lerp(invVelocity * dt, p.Velocity * dt, _TimeFlow);
+		float3 invVelocity = 4.0 * dir + _TimeFlow * p.Velocity;
+		pos += lerp(invVelocity * dt, p.Velocity * dt, _TimeFlow);
 	}
 	else
 	{
-		p.Position = _VertexBuffer[idx];
+		pos = _VertexBuffer[idx];
 	}
-
+	
+	p.Position = pos;
+	
 	_ParticleBuffer[idx] = p;
 }

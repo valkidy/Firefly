@@ -26,7 +26,7 @@ public class FireflyGpu : MonoBehaviour
 
     [Range(1e-3F, 32F)] public float Frequency = 10F;
     [Range(1e-3F, 32F)] public float Amplitude = 10F;
-    [Range(0, 4)] public float ElapsedTime = 0;
+    [Range(0, 4)] public float LocalTime = 0;
     
     public ComputeShader KernelShader;
     public Material material;
@@ -118,8 +118,8 @@ public class FireflyGpu : MonoBehaviour
         Variant = new ComputeBuffer(1, Marshal.SizeOf(typeof(ButterflyParticle)));
         var VariantData = new ButterflyParticle[1] { new ButterflyParticle() {
             Weight = 0.5F,
-            Life = 64F,
-            Size = 0.5F
+            Life = 4F,
+            Size = 0.25F
         }};
         Variant.SetData(VariantData);
     }
@@ -157,9 +157,8 @@ public class FireflyGpu : MonoBehaviour
         material.SetInt("_NumParticles", BufferSize);
         material.SetBuffer("_ParticleBuffer", ParticleBuffer);
         material.SetBuffer("_VertexBuffer", VertexBuffer);
-        material.SetBuffer("_Variant", Variant);
-        material.SetFloat("_ElapsedTime", ElapsedTime);
-        material.SetFloat("_LocalTime", ElapsedTime);        
+        material.SetBuffer("_Variant", Variant);        
+        material.SetFloat("_LocalTime", LocalTime);        
     }
     
     void Update()

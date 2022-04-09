@@ -7,7 +7,7 @@
 	float Time;
 };
 
-struct ButterflyParticle
+struct ParticleVariant
 {
 	float Weight;
 	float Life;

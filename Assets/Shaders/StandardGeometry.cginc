@@ -10,7 +10,7 @@ float4 _MainTex_ST;
 float _LocalTime;
 StructuredBuffer<Particle> _ParticleBuffer;
 StructuredBuffer<float3> _VertexBuffer;
-StructuredBuffer<ButterflyParticle> _Variant;
+StructuredBuffer<ParticleVariant> _Variant;
 
 // Vertex input attributes
 struct Attributes
@@ -64,6 +64,7 @@ void Geometry(
 	Particle p = _ParticleBuffer[pid];
 
 	float time = p.Time;
+	// float time = _LocalTime;
 	float lifeRandom = p.LifeRandom;
 	float3 velocity = p.Velocity;
 	
