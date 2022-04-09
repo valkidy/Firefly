@@ -1,4 +1,4 @@
-﻿Shader "Standard Geometry Shader Example"
+﻿Shader "Firefly/Geometry"
 {
 	Properties
 	{
@@ -6,8 +6,7 @@
 		_MainTex("Albedo", 2D) = "white" {}
 
 		[Space]
-		_LocalTime("Animation Time", Range(0, 4)) = 0.0
-		_ElapsedTime("Particle Time", Range(0, 1)) = 0.0
+		_LocalTime("Simulate Time", Range(0, 4)) = 0.0		
 	}
 
 	SubShader
@@ -24,7 +23,7 @@
 			#pragma geometry Geometry
 			#pragma fragment Fragment
 			// #pragma multi_compile_prepassfinal noshadowmask nodynlightmap nodirlightmap nolightmap
-			#include "StandardGeometry.cginc"
+			#include "FireflyGeometry.cginc"
 			ENDCG
 		}			
 	}

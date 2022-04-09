@@ -7,7 +7,7 @@ Material:
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_Name: StandardGeometry
+  m_Name: FireflyGeometry
   m_Shader: {fileID: 4800000, guid: 92546924a9b5b454bb817c504d814ab9, type: 3}
   m_ShaderKeywords: 
   m_LightmapFlags: 4

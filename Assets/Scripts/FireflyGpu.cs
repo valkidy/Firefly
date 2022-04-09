@@ -6,22 +6,24 @@ using UnityEngine;
 
 public class FireflyGpu : MonoBehaviour
 {
-    struct ButterflyParticle
-    {
-        public float Weight;
-        public float Life;
-        public float Size;
-    };
-
     [Range(0, 1)] public float TimeFlow = 0;
 
+    [Header("Particle parameters")]
+    [Range(1e-3F, 16F)] public float ParticleLife = 4F;
+    [Range(1e-3F, 1F)] public float ParticleSize = 0.15F;
     [Range(1e-3F, 32F)] public float Frequency = 10F;
     [Range(1e-3F, 32F)] public float Amplitude = 10F;
     [Range(0, 4)] public float LocalTime = 0;
-    
-    public ComputeShader KernelShader;
     public Material material;
+
+    [Header("Kernel")]
+    public ComputeShader KernelShader;
+
+    [Header("Source mesh")]
     public Mesh mesh;
+
+    #region internal parameters
+
     BulkMesh bulkMesh;
 
     ComputeBuffer Variant;
@@ -34,7 +36,9 @@ public class FireflyGpu : MonoBehaviour
 
     int BufferSize = 0;
     int Groups = 0;
-    
+
+    #endregion
+
     int CalcGroup(int numObjects, int numThreads)
     {        
         return Mathf.CeilToInt((float)numObjects / numThreads);
@@ -86,13 +90,13 @@ public class FireflyGpu : MonoBehaviour
 
         // Init in compute shader
         ParticleBuffer = new ComputeBuffer(BufferSize, Marshal.SizeOf(typeof(Particle)));
-
         VertexBuffer = new ComputeBuffer(BufferSize, Marshal.SizeOf(typeof(Vector3)));
+        Variant = new ComputeBuffer(1, Marshal.SizeOf(typeof(ParticleVariant)));
         VerticesData = new ComputeBuffer(mesh.vertexCount, Marshal.SizeOf(typeof(Vector3)));
         VerticesData.SetData(mesh.vertices);
         IndicesData = new ComputeBuffer((int)mesh.GetIndexCount(0), Marshal.SizeOf(typeof(int)));
         IndicesData.SetData(mesh.GetIndices(0));
-                
+    
         Groups = CalcGroup(BufferSize, THREADS);
 
         int kernel = KernelShader.FindKernel("InitVertices");
@@ -106,22 +110,21 @@ public class FireflyGpu : MonoBehaviour
         KernelShader.SetBuffer(kernel, "_ParticleBuffer", ParticleBuffer);        
         KernelShader.Dispatch(kernel, Groups, 1, 1);
 
-        Variant = new ComputeBuffer(1, Marshal.SizeOf(typeof(ButterflyParticle)));
-        var VariantData = new ButterflyParticle[1] { new ButterflyParticle() {
-            Weight = 0.5F,
-            Life = 4F,
-            Size = 0.25F
-        }};
-        Variant.SetData(VariantData);
+        kernel = KernelShader.FindKernel("InitParticleVariant");
+        KernelShader.SetFloat("_Weight", 0.5F);
+        KernelShader.SetFloat("_Life", ParticleLife);
+        KernelShader.SetFloat("_Size", ParticleSize);
+        KernelShader.SetBuffer(kernel, "_Variant", Variant);
+        KernelShader.Dispatch(kernel, 1, 1, 1);        
     }
 
     void OnDestroy()
     {
         VertexBuffer?.Release();
-        VerticesData?.Release();
-        IndicesData?.Release();
         ParticleBuffer?.Release();
         Variant?.Release();
+        VerticesData?.Release();
+        IndicesData?.Release();
     }
 
     void FixedUpdate()
@@ -133,22 +136,12 @@ public class FireflyGpu : MonoBehaviour
         KernelShader.SetMatrix("_LocalToWorld", this.transform.localToWorldMatrix);
         KernelShader.SetBuffer(kernel, "_Variant", Variant);
         KernelShader.SetBuffer(kernel, "_ParticleBuffer", ParticleBuffer);
-        KernelShader.SetBuffer(kernel, "_VertexBuffer", VertexBuffer);
-        
+        KernelShader.SetBuffer(kernel, "_VertexBuffer", VertexBuffer);        
         KernelShader.Dispatch(kernel, Groups, 1, 1);
 
-        // Particle[] ParticleData = new Particle[BufferSize];
-        // ParticleBuffer.GetData(ParticleData);
-        // Debug.Log(ParticleData[0].Time + ", " + ParticleData[0].Position + ", " + ParticleData[0].Velocity);
-        // Vector3[] VertexData = new Vector3[BufferSize];
-        // VertexBuffer.GetData(VertexData);
-        // Debug.Log(VertexData[0]);
-        // Debug.Log("BufferSize=" + BufferSize);
-
-        material.SetInt("_NumParticles", BufferSize);
         material.SetBuffer("_ParticleBuffer", ParticleBuffer);
         material.SetBuffer("_VertexBuffer", VertexBuffer);
-        material.SetBuffer("_Variant", Variant);        
+        material.SetBuffer("_Variant", Variant);
         material.SetFloat("_LocalTime", LocalTime);        
     }
     

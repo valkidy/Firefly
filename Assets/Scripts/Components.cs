@@ -25,6 +25,13 @@ namespace Firefly
         public float Time;
     };
 
+    struct ParticleVariant
+    {
+        public float Weight;
+        public float Life;
+        public float Size;
+    };
+
     interface IParticleVariant
     {
         float GetSize();
