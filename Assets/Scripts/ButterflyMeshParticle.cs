@@ -85,9 +85,9 @@ namespace Firefly
                 var v2 = vertices[indices[3 * i + 2]];
                 var vc = (v0 + v1 + v2) / 3F;
 
-                var uv0 = uv[indices[3 * i]];
-                var uv1 = uv[indices[3 * i + 1]];
-                var uv2 = uv[indices[3 * i + 2]];
+                var uv0 = (uv.Length > 0) ? uv[indices[3 * i]] : Vector2.zero;
+                var uv1 = (uv.Length > 0) ? uv[indices[3 * i + 1]] : Vector2.zero;
+                var uv2 = (uv.Length > 0) ? uv[indices[3 * i + 2]] : Vector2.zero;
 
                 _faces.Add(new Triangle
                 {

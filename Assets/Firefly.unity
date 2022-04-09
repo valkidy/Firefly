@@ -167,7 +167,7 @@ MonoBehaviour:
   TimeFlow: 0
   VariantType: 1
   ParticleLife: 4
-  ParticleSize: 0.15
+  ParticleSize: 0.36
   Frequency: 10
   Amplitude: 32
   Material: {fileID: 2100000, guid: 7c9b428e58de80849a1d0cf0204eb94e, type: 2}
