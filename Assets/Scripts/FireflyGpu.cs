@@ -6,15 +6,6 @@ using UnityEngine;
 
 public class FireflyGpu : MonoBehaviour
 {
-    struct Particle
-    {
-        public uint ID;
-        public Vector3 Position;
-        public Vector3 Velocity;
-        public float LifeRandom;
-        public float Time;
-    };
-
     struct ButterflyParticle
     {
         public float Weight;
@@ -126,11 +117,11 @@ public class FireflyGpu : MonoBehaviour
 
     void OnDestroy()
     {
-        VertexBuffer.Release();
-        VerticesData.Release();
-        IndicesData.Release();
-        ParticleBuffer.Release();
-        Variant.Release();
+        VertexBuffer?.Release();
+        VerticesData?.Release();
+        IndicesData?.Release();
+        ParticleBuffer?.Release();
+        Variant?.Release();
     }
 
     void FixedUpdate()

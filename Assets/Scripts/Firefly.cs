@@ -6,16 +6,18 @@ namespace Firefly
 {
     public class Firefly : MonoBehaviour
     {
-        [Range(1e-3F, 16F)] public float particleLife = 4F;
-        [Range(1e-3F, 1F)] public float particleSize = 0.15F;
-
         [Range(0, 1)] public float timeFlow = 0;
+
+        [Header("Particle parameters")]
+        [Range(1e-3F, 16F)] public float particleLife = 4F;
+        [Range(1e-3F, 1F)] public float particleSize = 0.15F;        
         [Range(1e-3F, 32F)] public float frequency = 10F;
         [Range(1e-3F, 32F)] public float amplitude = 10F;
-        
-        [SerializeField] Mesh mesh;
-        [SerializeField] Material material;
+        public Material material;
 
+        [Header("Source mesh")]
+        public Mesh mesh;
+                
         #region internal parameters
 
         BulkMesh bulkMesh;
@@ -44,8 +46,9 @@ namespace Firefly
             {
                 particles.Add(new Particle()
                 {
-                    Velocity = Vector3.zero,
                     ID = (uint)i,
+                    Position = vertices[i].Position,
+                    Velocity = Vector3.zero,                    
                     LifeRandom = Random.Value01((uint)i) * 0.8f + 0.2f,
                     Time = 0,
                 });
@@ -95,18 +98,18 @@ namespace Firefly
 
                 _faces.Add(new Triangle
                 {
-                    Vertex1 = v0 - vc,
-                    TexCoord1 = uv0,
-                    Vertex2 = v1 - vc,
-                    TexCoord2 = uv1,
+                    Vertex1 = v0 - vc,                    
+                    Vertex2 = v1 - vc,                    
                     Vertex3 = v2 - vc,
+                    
+                    TexCoord1 = uv0,
+                    TexCoord2 = uv1,
                     TexCoord3 = uv2,
                 });
 
                 _vertices.Add(new Vertex
                 {
-                    basePos = vc,
-                    localPos = vc,
+                    Position = vc,
                 });
             }
         }
@@ -137,7 +140,7 @@ namespace Firefly
             az = (az.normalized) * size;
 
             // Vertices
-            var pos = vertex.localPos;
+            var pos = particle.Position;
 
             var va1 = pos + face.Vertex1;
             var va2 = pos + face.Vertex2;
@@ -184,11 +187,10 @@ namespace Firefly
             var particle = particles[index];
             var life = variant.Life * particle.LifeRandom;
 
-            var basePos = vertices[index].basePos;
-            var currPos = vertices[index].localPos;
-            var acc = Utility.DFNoise(currPos * time, frequency) * amplitude;
+            var pos = particle.Position;
+            var acc = Utility.DFNoise(pos * time, frequency) * amplitude;
 
-            dt *= Amplitude(currPos);
+            dt *= Amplitude(pos);
 
             if (particle.Time > 1e-1F)
             {
@@ -199,21 +201,22 @@ namespace Firefly
                 particle.Velocity = Vector3.zero;
             }
 
-            particle.Time += (timeFlow > 0) ? dt : -dt;
-            particle.Time = Mathf.Clamp(particle.Time, 0, 2F * life);
-
-            if (timeFlow > 0 || (basePos - currPos).sqrMagnitude > 1e-1F)
+            // Equals to (timeFlow > 0) ? dt : -dt            
+            particle.Time = Mathf.Clamp(
+                particle.Time - Mathf.Sign(-timeFlow) * dt, 0, 1.2F * life);
+            
+            var dir = vertices[index].Position - pos;
+            if (timeFlow > 0 || dir.sqrMagnitude > 1e-1F)
             {
-                var invVelocity = (basePos - currPos) + timeFlow * particle.Velocity;
-                currPos += Math.Lerp(invVelocity * dt, particle.Velocity * dt, timeFlow);
+                var invVelocity = dir + timeFlow * particle.Velocity;
+                particle.Position += Math.Lerp(invVelocity * dt, particle.Velocity * dt, timeFlow);
             }
             else
             {
-                currPos = basePos;
+                particle.Position = vertices[index].Position;
             }
 
-            particles[index] = particle;
-            vertices[index].localPos = currPos;
+            particles[index] = particle;            
         }
     }
 }

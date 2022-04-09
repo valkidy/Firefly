@@ -159,7 +159,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 137408856}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 22e41c6282f89ab4599c5f6d70d0fbc9, type: 3}
   m_Name: 
@@ -167,7 +167,7 @@ MonoBehaviour:
   TimeFlow: 0
   Frequency: 10
   Amplitude: 32
-  ElapsedTime: 0
+  LocalTime: 0
   KernelShader: {fileID: 7200000, guid: 4d3f3a3edb3878840903e4123bcdbd8d, type: 3}
   material: {fileID: 2100000, guid: b804b5381fa392e458885e0d3202b28c, type: 2}
   mesh: {fileID: -2084928699955708009, guid: fdf1d42acd4b91d4398de873ee464ee7, type: 3}
@@ -209,7 +209,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 502446853}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 56aa27ea07347ac4ea3bc5399e460ef1, type: 3}
   m_Name: 

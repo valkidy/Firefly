@@ -13,18 +13,17 @@ namespace Firefly
 
     class Vertex
     {
-        public Vector3 basePos;
-        public Vector3 localPos;        
+        public Vector3 Position;        
     }
-  
+
     struct Particle
     {
         public uint ID;
         public Vector3 Position;
-        public Vector3 Velocity;   
+        public Vector3 Velocity;
         public float LifeRandom;
         public float Time;
-    }
+    };
 
     interface IParticleVariant
     {
