@@ -1,4 +1,4 @@
-﻿Shader "Firefly/diffuse"
+﻿Shader "Firefly/Diffuse"
 {
     Properties
     {

@@ -1,0 +1,105 @@
+﻿#define THREADS 128
+
+#include "UnityCG.cginc"
+#include "Common.cginc"
+#include "SimplexNoiseGrad3D.cginc"
+
+float _TimeFlow;
+float _Amplitude;
+float _Frequency;
+float _Weight;
+float _Life;
+float _Size;
+float4x4 _LocalToWorld;
+
+StructuredBuffer<int> _IndicesData;
+StructuredBuffer<float4> _VerticesData;
+RWStructuredBuffer<ParticleVariant> _Variant;
+RWStructuredBuffer<Particle> _ParticleBuffer;
+RWStructuredBuffer<float3> _VertexBuffer;
+
+float calc_amplitude(float3 p)
+{
+	float z = mul(_LocalToWorld, float4(p, 1.0)).z;
+	return clamp(z + 0.5, 0.5, 2);
+}
+
+#pragma kernel InitVertices
+[numthreads(THREADS, 1, 1)]
+void InitVertices(uint3 id : SV_DispatchThreadID)
+{	
+	float3 v0 = _VerticesData[_IndicesData[3 * id.x]];
+	float3 v1 = _VerticesData[_IndicesData[3 * id.x + 1]];
+	float3 v2 = _VerticesData[_IndicesData[3 * id.x + 2]];
+	
+	_VertexBuffer[id.x] = (v0 + v1 + v2) / 3.0;
+}
+
+#pragma kernel InitParticleVariant
+[numthreads(THREADS, 1, 1)]
+void InitParticleVariant(uint3 id : SV_DispatchThreadID)
+{
+	ParticleVariant variant = (ParticleVariant)0;
+	variant.Weight = _Weight;
+	variant.Life = _Life;
+	variant.Size = _Size;
+
+	_Variant[id.x] = variant;
+}
+
+#pragma kernel InitParticles
+[numthreads(THREADS, 1, 1)]
+void InitParticles(uint3 id : SV_DispatchThreadID)
+{
+	Particle p = (Particle)0;			
+	p.ID = id.x;
+	p.Position = _VertexBuffer[id.x].xyz;
+	p.Velocity = (float3)0;
+	p.LifeRandom = nrand((float2)0, id.x) * 0.8 + 0.2;
+	p.Time = 0;
+	
+	_ParticleBuffer[id.x] = p;
+}
+
+#pragma kernel ComputeParticles
+[numthreads(THREADS, 1, 1)]
+void ComputeParticles(uint3 id : SV_DispatchThreadID)
+{
+	int idx = id.x;
+
+	float t = _Time.y;
+	float dt = unity_DeltaTime.x;
+
+	Particle p = _ParticleBuffer[idx];
+
+	float life = _Variant[0].Life * p.LifeRandom;	
+	float3 pos = p.Position;
+	float3 acc = snoise_grad(pos * t * _Frequency) * _Amplitude;
+
+	dt *= calc_amplitude(pos);
+
+	if (p.Time > 0.1)
+	{
+		p.Velocity += acc * dt;
+	}
+	else
+	{
+		p.Velocity = (float3)0;
+	}
+	
+	// (2*sign(x) - 1) * y Equals to (x>0) ? y : -y	
+	p.Time = clamp(p.Time + 4.0 * (2 * sign(_TimeFlow) - 1) * dt, 0, 1.2 * life);
+
+	float3 dir = _VertexBuffer[idx] - pos;
+	if (_TimeFlow > 0 || dot(dir, dir) > 0.1)
+	{
+		float3 invVelocity = 4.0 * dir + _TimeFlow * p.Velocity;
+		p.Position += lerp(invVelocity * dt, p.Velocity * dt, _TimeFlow);
+	}
+	else
+	{
+		p.Position = _VertexBuffer[idx];
+	}
+		 
+	_ParticleBuffer[idx] = p;
+}
