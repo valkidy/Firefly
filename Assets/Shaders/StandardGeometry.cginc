@@ -86,7 +86,7 @@ void Geometry(
 	az = normalize(az) * size;
 
 	// Vertices	
-	float3 pos = _VertexBuffer[pid];
+	float3 pos = p.Position;
 	
 	float3 p0 = input[0].position.xyz;
 	float3 p1 = input[1].position.xyz;

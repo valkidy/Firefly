@@ -36,11 +36,14 @@ public class FireflyGpu : MonoBehaviour
     ComputeBuffer Variant;
     ComputeBuffer ParticleBuffer;
     ComputeBuffer VertexBuffer;
-    int BufferSize = 0;
-    const int THREADS = 128;
-    // Particle[] ParticleData;
-    // Vector3[] PositionData;
+    ComputeBuffer VerticesData;
+    ComputeBuffer IndicesData;
 
+    const int THREADS = 128;
+
+    int BufferSize = 0;
+    int Groups = 0;
+    
     int CalcGroup(int numObjects, int numThreads)
     {        
         return Mathf.CeilToInt((float)numObjects / numThreads);
@@ -90,31 +93,27 @@ public class FireflyGpu : MonoBehaviour
 
         ConstructBulkMesh(mesh, ref bulkMesh, ref BufferSize);
 
-
-        // PositionData = new Vector3[BufferSize];
-        // for (int i = 0; i < BufferSize; ++i) {
-        //     var v0 = vertices[indices[3 * i + 0]];
-        //     var v1 = vertices[indices[3 * i + 1]];
-        //     var v2 = vertices[indices[3 * i + 2]];
-        //     PositionData[i] = (v0 + v1 + v2) / 3F;
-        // }
-
-
-        // TODO: Init in compute shader
-        VertexBuffer = new ComputeBuffer(BufferSize, Marshal.SizeOf(typeof(Vector3)));
-        // PositionBuffer.SetData(PositionData);
-
+        // Init in compute shader
         ParticleBuffer = new ComputeBuffer(BufferSize, Marshal.SizeOf(typeof(Particle)));
 
-        // ParticleData = new Particle[BufferSize];
-        // for (int i = 0; i < BufferSize; ++i)
-        // {
-        //     ParticleData[i].LifeRandom = 0.001F;
-        //     ParticleData[i].Velocity = Vector3.zero;
-        //     ParticleData[i].Position = Vector3.one * i;
-        //     ParticleData[i].Time = 0;
-        // }
-        // ParticleBuffer.SetData(ParticleData);
+        VertexBuffer = new ComputeBuffer(BufferSize, Marshal.SizeOf(typeof(Vector3)));
+        VerticesData = new ComputeBuffer(mesh.vertexCount, Marshal.SizeOf(typeof(Vector3)));
+        VerticesData.SetData(mesh.vertices);
+        IndicesData = new ComputeBuffer((int)mesh.GetIndexCount(0), Marshal.SizeOf(typeof(int)));
+        IndicesData.SetData(mesh.GetIndices(0));
+                
+        Groups = CalcGroup(BufferSize, THREADS);
+
+        int kernel = KernelShader.FindKernel("InitVertices");
+        KernelShader.SetBuffer(kernel, "_IndicesData", IndicesData);        
+        KernelShader.SetBuffer(kernel, "_VerticesData", VerticesData);
+        KernelShader.SetBuffer(kernel, "_VertexBuffer", VertexBuffer);
+        KernelShader.Dispatch(kernel, Groups, 1, 1);
+        
+        kernel = KernelShader.FindKernel("InitParticles");
+        KernelShader.SetBuffer(kernel, "_VertexBuffer", VertexBuffer);        
+        KernelShader.SetBuffer(kernel, "_ParticleBuffer", ParticleBuffer);        
+        KernelShader.Dispatch(kernel, Groups, 1, 1);
 
         Variant = new ComputeBuffer(1, Marshal.SizeOf(typeof(ButterflyParticle)));
         var VariantData = new ButterflyParticle[1] { new ButterflyParticle() {
@@ -128,6 +127,8 @@ public class FireflyGpu : MonoBehaviour
     void OnDestroy()
     {
         VertexBuffer.Release();
+        VerticesData.Release();
+        IndicesData.Release();
         ParticleBuffer.Release();
         Variant.Release();
     }
@@ -141,15 +142,16 @@ public class FireflyGpu : MonoBehaviour
         KernelShader.SetMatrix("_LocalToWorld", this.transform.localToWorldMatrix);
         KernelShader.SetBuffer(kernel, "_Variant", Variant);
         KernelShader.SetBuffer(kernel, "_ParticleBuffer", ParticleBuffer);
-        KernelShader.SetBuffer(kernel, "_PositionBuffer", VertexBuffer);
-
-        int Groups = CalcGroup(BufferSize, THREADS);
+        KernelShader.SetBuffer(kernel, "_VertexBuffer", VertexBuffer);
+        
         KernelShader.Dispatch(kernel, Groups, 1, 1);
 
+        // Particle[] ParticleData = new Particle[BufferSize];
         // ParticleBuffer.GetData(ParticleData);
-        // Debug.Log(ParticleData[0].Time + ", " + ParticleData[0].Velocity);
-        // PositionBuffer.GetData(PositionData);
-        // Debug.Log(PositionData[0]);
+        // Debug.Log(ParticleData[0].Time + ", " + ParticleData[0].Position + ", " + ParticleData[0].Velocity);
+        // Vector3[] VertexData = new Vector3[BufferSize];
+        // VertexBuffer.GetData(VertexData);
+        // Debug.Log(VertexData[0]);
         // Debug.Log("BufferSize=" + BufferSize);
 
         material.SetInt("_NumParticles", BufferSize);

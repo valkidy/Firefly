@@ -4,19 +4,31 @@
 #include "Common.cginc"
 #include "SimplexNoiseGrad3D.cginc"
 
-
 float _TimeFlow;
 float _Amplitude;
 float _Frequency;
 float4x4 _LocalToWorld;
+StructuredBuffer<int> _IndicesData;
+StructuredBuffer<float4> _VerticesData;
 StructuredBuffer<ButterflyParticle> _Variant;
 RWStructuredBuffer<Particle> _ParticleBuffer;
-RWStructuredBuffer<float3> _PositionBuffer;
+RWStructuredBuffer<float3> _VertexBuffer;
 
 float calc_amplitude(float3 p)
 {
 	float z = mul(_LocalToWorld, float4(p, 1.0)).z;
 	return clamp(z + 0.5, 0.5, 2);
+}
+
+#pragma kernel InitVertices
+[numthreads(THREADS, 1, 1)]
+void InitVertices(uint3 id : SV_DispatchThreadID)
+{	
+	float3 v0 = _VerticesData[_IndicesData[3 * id.x]];
+	float3 v1 = _VerticesData[_IndicesData[3 * id.x + 1]];
+	float3 v2 = _VerticesData[_IndicesData[3 * id.x + 2]];
+	
+	_VertexBuffer[id.x] = (v0 + v1 + v2) / 3.0;
 }
 
 #pragma kernel InitParticles
@@ -25,7 +37,7 @@ void InitParticles(uint3 id : SV_DispatchThreadID)
 {
 	Particle p = (Particle)0;			
 	p.ID = id.x;
-	p.Position = (float3)0;
+	p.Position = _VertexBuffer[id.x].xyz;
 	p.Velocity = (float3)0;
 	p.LifeRandom = nrand((float2)0, id.x) * 0.8 + 0.2;
 	p.Time = 0;
@@ -37,20 +49,15 @@ void InitParticles(uint3 id : SV_DispatchThreadID)
 [numthreads(THREADS, 1, 1)]
 void ComputeParticles(uint3 id : SV_DispatchThreadID)
 {
-	// id.x
 	int idx = id.x;
-	
-	// var dt = Time.deltaTime;
-	// var time = Time.timeSinceLevelLoad;
+
 	float t = _Time.y;
 	float dt = unity_DeltaTime.x;
 
 	Particle p = _ParticleBuffer[idx];
 	float life = _Variant[0].Life * p.LifeRandom;
-
-	// var basePos = vertices[index].basePos;
-	// var currPos = vertices[index].localPos;
-	float3 pos = _PositionBuffer[idx];
+	
+	float3 pos = p.Position;
 	float3 acc = snoise_grad(pos * t * _Frequency) * _Amplitude;
 
 	dt *= calc_amplitude(pos);
@@ -70,20 +77,20 @@ void ComputeParticles(uint3 id : SV_DispatchThreadID)
 		pos += p.Velocity * dt;
 	}
 	
-	// p.Time += (_TimeFlow > 0) ? dt : -dt;	
-	// p.Time = Mathf.Clamp(particle.Time, 0, 2F * life);
+	// Equals to (_TimeFlow > 0) ? dt : -dt
+	p.Time += (2 * sign(_TimeFlow) - 1) * dt;
+	p.Time = clamp(p.Time, 0, 2.0 * life);
 
-	// if (_TimeFlow > 0 || (basePos - currPos).sqrMagnitude > 1e-1F)
-	// {
-	// 	var invVelocity = (basePos - currPos) + timeFlow * particle.Velocity;
-	// 	currPos += Math.Lerp(invVelocity * dt, particle.Velocity * dt, timeFlow);
-	// }
-	// else
-	// {
-	// 	currPos = basePos;
-	// }
+	float3 dir = _VertexBuffer[idx] - p.Position;
+	if (_TimeFlow > 0 || dot(dir, dir) > 1e-1F)
+	{
+		float3 invVelocity = dir + _TimeFlow * p.Velocity;
+		p.Position += lerp(invVelocity * dt, p.Velocity * dt, _TimeFlow);
+	}
+	else
+	{
+		p.Position = _VertexBuffer[idx];
+	}
 
 	_ParticleBuffer[idx] = p;
-	_PositionBuffer[idx] = pos;
-	// vertices[index].localPos = currPos;
 }
