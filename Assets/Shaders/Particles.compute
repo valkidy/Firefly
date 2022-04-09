@@ -1,22 +1,9 @@
-﻿#define THREADS 8
+﻿#define THREADS 128
 
 #include "UnityCG.cginc"
+#include "Common.cginc"
 #include "SimplexNoiseGrad3D.cginc"
 
-struct Particle
-{
-	float3 Position;
-	float3 Velocity;
-	float LifeRandom;
-	float Time;	
-};
-
-struct ButterflyParticle
-{
-	float Weight;
-	float Life;
-	float Size;
-};
 
 float _TimeFlow;
 float _Amplitude;
@@ -30,6 +17,20 @@ float calc_amplitude(float3 p)
 {
 	float z = mul(_LocalToWorld, float4(p, 1.0)).z;
 	return clamp(z + 0.5, 0.5, 2);
+}
+
+#pragma kernel InitParticles
+[numthreads(THREADS, 1, 1)]
+void InitParticles(uint3 id : SV_DispatchThreadID)
+{
+	Particle p = (Particle)0;			
+	p.ID = id.x;
+	p.Position = (float3)0;
+	p.Velocity = (float3)0;
+	p.LifeRandom = nrand((float2)0, id.x) * 0.8 + 0.2;
+	p.Time = 0;
+	
+	_ParticleBuffer[id.x] = p;
 }
 
 #pragma kernel ComputeParticles
