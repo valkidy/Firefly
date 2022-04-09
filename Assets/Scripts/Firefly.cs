@@ -6,218 +6,70 @@ namespace Firefly
 {
     public class Firefly : MonoBehaviour
     {
-        [Range(0, 1)] public float timeFlow = 0;
+        public enum Type
+        {
+            ParticleMesh = 0,
+            GpuGeometry,
+        }
+
+        [Range(0, 1)] public float TimeFlow = 0;
+
+        [Header("Variant type")]
+        public Type VariantType = Type.GpuGeometry;
 
         [Header("Particle parameters")]
-        [Range(1e-3F, 16F)] public float particleLife = 4F;
-        [Range(1e-3F, 1F)] public float particleSize = 0.15F;        
-        [Range(1e-3F, 32F)] public float frequency = 10F;
-        [Range(1e-3F, 32F)] public float amplitude = 10F;
-        public Material material;
+        [Range(1e-3F, 16F)] public float ParticleLife = 4F;
+        [Range(1e-3F, 1F)] public float ParticleSize = 0.15F;        
+        [Range(1e-3F, 32F)] public float Frequency = 10F;
+        [Range(1e-3F, 32F)] public float Amplitude = 10F;
+        public Material Material;
+        
 
         [Header("Source mesh")]
         public Mesh mesh;
-                
-        #region internal parameters
 
-        BulkMesh bulkMesh;
-        ButterflyParticle variant;
+        [Header("Gpu options")]
+        public ComputeShader KernelShader;
+        public Material GeometryMaterial;
 
-        List<Particle> particles = new List<Particle>();
-        List<Triangle> faces = new List<Triangle>();
-        List<Vertex> vertices = new List<Vertex>();
-
-        #endregion
+        IVariant<VariantData, RenderData> emitter;
 
         void Start()
-        {           
-            BuildVertexAndTriangle(mesh, ref vertices, ref faces);
-            
-            bulkMesh = new BulkMesh();
+        {            
+            if (VariantType == Type.GpuGeometry)
+                emitter = new ButterflyGpuGeometryParticle();
+            else if (VariantType == Type.ParticleMesh)
+                emitter = new ButterflyMeshParticle();
 
-            variant = new ButterflyParticle()
-            {
-                Weight = 0.5F,
-                Life = particleLife,
-                Size = particleSize
-            };
+            emitter.OnInit(
+                new VariantData {
+                    Amplitude = Amplitude,
+                    Frequency = Frequency,
+                    Life = ParticleLife,
+                    Size = ParticleSize,
+                }, 
+                new RenderData {
+                    KernelShader = KernelShader,
+                    Mat = (VariantType == Type.GpuGeometry) ? GeometryMaterial : Material,
+                    Mesh = mesh,
+                    LocalToWorld = this.transform.localToWorldMatrix
+            });
+        }
 
-            for (int i = 0; i < faces.Count; ++i)
-            {
-                particles.Add(new Particle()
-                {
-                    ID = (uint)i,
-                    Position = vertices[i].Position,
-                    Velocity = Vector3.zero,                    
-                    LifeRandom = Random.Value01((uint)i) * 0.8f + 0.2f,
-                    Time = 0,
-                });
-            }
+        void OnDestroy()
+        {
+            emitter.OnFinalize();
         }
 
         void FixedUpdate()
         {
-            bulkMesh.Reset();
-
-            for (int i = 0; i < particles.Count; ++i)
-            {
-                UpdateParticle(i, ref particles, ref vertices);
-
-                ButterflyReconstruction(vertices[i], faces[i], particles[i], variant, ref bulkMesh);
-            }
-
-            bulkMesh.Build();
+            emitter.OnUpdate(TimeFlow);
         }
 
         void Update()
         {
-            Graphics.DrawMesh(bulkMesh.mesh, Matrix4x4.identity, material, 0);
-        }
-
-        void BuildVertexAndTriangle(
-            Mesh mesh,
-            ref List<Vertex> _vertices,
-            ref List<Triangle> _faces)
-        {
-            // Only support one submesh
-            var vertices = mesh.vertices;
-            var indices = mesh.GetIndices(0);
-            var normals = mesh.normals;
-            var uv = mesh.uv;
-
-            for (int i = 0; i < indices.Length / 3; ++i)
-            {
-                var v0 = vertices[indices[3 * i]];
-                var v1 = vertices[indices[3 * i + 1]];
-                var v2 = vertices[indices[3 * i + 2]];
-                var vc = (v0 + v1 + v2) / 3F;
-
-                var uv0 = uv[indices[3 * i]];
-                var uv1 = uv[indices[3 * i + 1]];
-                var uv2 = uv[indices[3 * i + 2]];
-
-                _faces.Add(new Triangle
-                {
-                    Vertex1 = v0 - vc,                    
-                    Vertex2 = v1 - vc,                    
-                    Vertex3 = v2 - vc,
-                    
-                    TexCoord1 = uv0,
-                    TexCoord2 = uv1,
-                    TexCoord3 = uv2,
-                });
-
-                _vertices.Add(new Vertex
-                {
-                    Position = vc,
-                });
-            }
-        }
-
-        void ButterflyReconstruction(
-            Vertex vertex,
-            Triangle face,
-            Particle particle,
-            IParticleVariant variant,
-            ref BulkMesh bulkMesh)
-        {
-            // Scaling with simple lerp
-            var t_s = particle.Time / (variant.GetLife() * particle.LifeRandom);
-            var size = variant.GetSize() * Mathf.Max(1e-2F, 1 - t_s);
-
-            // Look-at matrix from velocity
-            var az = particle.Velocity + Vector3.one * 0.001f;
-            var ax = Vector3.Cross(Vector3.up, az);
-            var ay = Vector3.Cross(az, ax);
-
-            // Flapping
-            var freq = 8 + Random.Value01(particle.ID + 10000) * 20;
-            var flap = Mathf.Sin(freq * particle.Time);
-
-            // Axis vectors
-            ax = (ax.normalized) * size;
-            ay = (ay.normalized) * size * flap;
-            az = (az.normalized) * size;
-
-            // Vertices
-            var pos = particle.Position;
-
-            var va1 = pos + face.Vertex1;
-            var va2 = pos + face.Vertex2;
-            var va3 = pos + face.Vertex3;
-
-            var vb1 = pos + az * 0.2f;
-            var vb2 = pos - az * 0.2f;
-            var vb3 = pos - ax + ay + az;
-            var vb4 = pos - ax + ay - az;
-            var vb5 = vb3 + ax * 2;
-            var vb6 = vb4 + ax * 2;
-
-            var p_t = Mathf.Clamp01(particle.Time);
-            var v1 = va1.Lerp(vb1, p_t);
-            var v2 = va2.Lerp(vb2, p_t);
-            var v3 = va3.Lerp(vb3, p_t);
-            var v4 = va3.Lerp(vb4, p_t);
-            var v5 = va3.Lerp(vb5, p_t);
-            var v6 = va3.Lerp(vb6, p_t);
-
-            var uv1 = face.TexCoord1;
-            var uv2 = face.TexCoord2;
-            var uv3 = face.TexCoord3;
-
-            // Output
-            bulkMesh.AddTriangle(v1, v2, v5, uv1, uv2, uv3);
-            bulkMesh.AddTriangle(v5, v2, v6, uv3, uv2, uv3);
-            bulkMesh.AddTriangle(v3, v4, v1, uv3, uv3, uv1);
-            bulkMesh.AddTriangle(v1, v4, v2, uv1, uv3, uv2);
-        }
-
-        float Amplitude(Vector3 p)
-        {
-            var localToWorld = this.transform.localToWorldMatrix;
-            var z = localToWorld.MultiplyVector(p).z;
-            return Mathf.Clamp(z + 0.5f, 0.5F, 2F);
-        }
-
-        void UpdateParticle(int index, ref List<Particle> particles, ref List<Vertex> vertices)
-        {
-            var dt = Time.deltaTime;
-            var time = Time.timeSinceLevelLoad;
-
-            var particle = particles[index];
-            var life = variant.Life * particle.LifeRandom;
-
-            var pos = particle.Position;
-            var acc = Utility.DFNoise(pos * time, frequency) * amplitude;
-
-            dt *= Amplitude(pos);
-
-            if (particle.Time > 1e-1F)
-            {
-                particle.Velocity += acc * dt;
-            }
-            else
-            {
-                particle.Velocity = Vector3.zero;
-            }
-
-            // Equals to (timeFlow > 0) ? dt : -dt            
-            particle.Time = Mathf.Clamp(
-                particle.Time - Mathf.Sign(-timeFlow) * dt, 0, 1.2F * life);
-            
-            var dir = vertices[index].Position - pos;
-            if (timeFlow > 0 || dir.sqrMagnitude > 1e-1F)
-            {
-                var invVelocity = dir + timeFlow * particle.Velocity;
-                particle.Position += Math.Lerp(invVelocity * dt, particle.Velocity * dt, timeFlow);
-            }
-            else
-            {
-                particle.Position = vertices[index].Position;
-            }
-
-            particles[index] = particle;            
-        }
+            emitter.OnRender();
+        }        
     }
 }
 
