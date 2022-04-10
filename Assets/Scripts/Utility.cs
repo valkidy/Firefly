@@ -6,11 +6,11 @@ namespace Firefly
 {
     public class Utility
     {
-        public static Vector3 DFNoise(Vector3 p, float frequency)
+        public static Vector3 DFNoise(Vector3 p, float frequency, float timestampOffset)
         {
             p *= frequency;
 
-            uint frameCount = 6u * (uint)(p.sqrMagnitude + Time.frameCount);
+            uint frameCount = 6u * (uint)(p.sqrMagnitude + timestampOffset);
 
             Vector3 grad1 = new Vector3(
                 Random.Value01(frameCount),
@@ -20,7 +20,7 @@ namespace Firefly
 
             p.z += 100;
 
-            frameCount = 6u * (uint)(p.sqrMagnitude + Time.frameCount);
+            frameCount = 6u * (uint)(p.sqrMagnitude + timestampOffset);
 
             Vector3 grad2 = new Vector3(
                 Random.Value01(frameCount + 3),

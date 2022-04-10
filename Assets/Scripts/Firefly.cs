@@ -8,7 +8,7 @@ namespace Firefly
     {
         public enum Type
         {
-            ParticleMesh = 0,
+            GpuInstance = 0,
             GpuGeometry,
         }
 
@@ -22,25 +22,24 @@ namespace Firefly
         [Range(1e-3F, 1F)] public float ParticleSize = 0.15F;        
         [Range(1e-3F, 32F)] public float Frequency = 10F;
         [Range(1e-3F, 32F)] public float Amplitude = 10F;
-        public Material Material;
         
-
         [Header("Source mesh")]
         public Mesh mesh;
 
         [Header("Gpu options")]
         public ComputeShader KernelShader;
-        public Material GeometryMaterial;
-
+        public Material GpuInstanceMaterial;
+        public Material GpuGeometryMaterial;
+        
         IVariant<VariantData, RenderData> emitter;
 
         void Start()
         {            
             if (VariantType == Type.GpuGeometry)
                 emitter = new ButterflyGpuGeometryParticle();
-            else if (VariantType == Type.ParticleMesh)
-                emitter = new ButterflyMeshParticle();
-
+            else if (VariantType == Type.GpuInstance)
+                emitter = new ButterflyGpuInstanceParticle();
+                
             emitter.OnInit(
                 new VariantData {
                     Amplitude = Amplitude,
@@ -50,7 +49,7 @@ namespace Firefly
                 }, 
                 new RenderData {
                     KernelShader = KernelShader,
-                    Mat = (VariantType == Type.GpuGeometry) ? GeometryMaterial : Material,
+                    Mat = (VariantType == Type.GpuGeometry) ? GpuGeometryMaterial : GpuInstanceMaterial,
                     Mesh = mesh,
                     LocalToWorld = this.transform.localToWorldMatrix
             });
