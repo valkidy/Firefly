@@ -35,7 +35,8 @@ mesh every frame. That also benefits when it needs to modify or validate the cal
 
 But the fastest way is that we put all the calculations into gpu if readback isn't necessary :-)
 
-![Reverse](Docs/geometry-shader-impl.gif "Implement with geometry shader")
+![Forward](Docs/geometry-shader-impl-forward.gif "Forward with geometry shader")
+![Reverse](Docs/geometry-shader-impl-reverse.gif "Reverse with geometry shader")
 
 # Environment
 - Unity 2019.4.1f1
