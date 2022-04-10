@@ -17,11 +17,6 @@ namespace Firefly
         RenderData renderData;
         ButterflyParticle variant;
 
-        // List<Particle> Particles = new List<Particle>();
-        // List<Triangle> Faces = new List<Triangle>();
-        // List<Vertex> Vertices = new List<Vertex>();
-
-        // Vertex[] VertexData;
         NativeArray<Particle> Particles;
         NativeArray<Triangle> Faces;
         NativeArray<Vertex> Vertices;
@@ -52,14 +47,14 @@ namespace Firefly
 
             // Only support one submesh
             var mesh = renderData.Mesh;
-            var vertices = new NativeArray<Vector3>(mesh.vertices, Allocator.TempJob);
-            var indices = new NativeArray<int>(mesh.GetIndices(0), Allocator.TempJob);
+            var vertices = new NativeArray<Vector3>(mesh.vertices, Allocator.Persistent);
+            var indices = new NativeArray<int>(mesh.GetIndices(0), Allocator.Persistent);
             var normals = (mesh.normals != null)
-                ? new NativeArray<Vector3>(mesh.normals, Allocator.TempJob)
-                : new NativeArray<Vector3>(new Vector3[1], Allocator.TempJob);                
+                ? new NativeArray<Vector3>(mesh.normals, Allocator.Persistent)
+                : new NativeArray<Vector3>(new Vector3[1], Allocator.Persistent);                
             var uv = (mesh.uv != null)
-                ? new NativeArray<Vector2>(mesh.uv, Allocator.TempJob)
-                : new NativeArray<Vector2>(new Vector2[1], Allocator.TempJob);
+                ? new NativeArray<Vector2>(mesh.uv, Allocator.Persistent)
+                : new NativeArray<Vector2>(new Vector2[1], Allocator.Persistent);
 
             InstancingCount = indices.Length / 3;
 
@@ -80,7 +75,6 @@ namespace Firefly
             indices.Dispose();
             normals.Dispose();
             uv.Dispose();
-            // BuildVertexAndTriangle(renderData.Mesh);
 
             VertexBuffer = new ComputeBuffer(InstancingCount, Marshal.SizeOf(typeof(VertexBatch)));
             VertexBatchData = new NativeArray<VertexBatch>(InstancingCount, Allocator.Persistent);
@@ -263,7 +257,7 @@ namespace Firefly
                 var life = Life * particle.LifeRandom;
 
                 var pos = particle.Position;
-                var acc = Utility.DFNoise(pos * time, Frequency) * Amplitude;
+                var acc = Utility.DFNoise(pos * time, Frequency, 0) * Amplitude;
 
                 var z = LocalToWorld.MultiplyVector(pos).z;
                 dt *= Mathf.Clamp(z + 0.5f, 0.5F, 2F);                
@@ -386,53 +380,6 @@ namespace Firefly
         }
         
         #endregion
-
-        void BuildVertexAndTriangle(Mesh mesh)            
-        {
-            // Only support one submesh
-            var vertices = mesh.vertices;
-            var indices = mesh.GetIndices(0);
-            var normals = mesh.normals;
-            var uv = mesh.uv;
-
-            InstancingCount = indices.Length / 3;
-            
-            Faces = new NativeArray<Triangle>(InstancingCount, Allocator.Persistent);
-            Vertices = new NativeArray<Vertex>(InstancingCount, Allocator.Persistent);
-
-            for (int i = 0; i < InstancingCount; ++i)
-            {
-                var v0 = vertices[indices[3 * i]];
-                var v1 = vertices[indices[3 * i + 1]];
-                var v2 = vertices[indices[3 * i + 2]];
-                var vc = (v0 + v1 + v2) / 3F;
-
-                var uv0 = (uv.Length > 0) ? uv[indices[3 * i]] : Vector2.zero;
-                var uv1 = (uv.Length > 0) ? uv[indices[3 * i + 1]] : Vector2.zero;
-                var uv2 = (uv.Length > 0) ? uv[indices[3 * i + 2]] : Vector2.zero;
-
-                var n0 = (normals.Length > 0) ? normals[indices[3 * i]] : Vector3.zero;
-                var n1 = (normals.Length > 0) ? normals[indices[3 * i + 1]] : Vector3.zero;
-                var n2 = (normals.Length > 0) ? normals[indices[3 * i + 2]] : Vector3.zero;
-
-                Faces[i] = new Triangle()
-                {
-                    Vertex1 = v0 - vc,
-                    Vertex2 = v1 - vc,
-                    Vertex3 = v2 - vc,
-
-                    TexCoord1 = uv0,
-                    TexCoord2 = uv1,
-                    TexCoord3 = uv2,
-
-                    Normal1 = n0,
-                    Normal2 = n1,
-                    Normal3 = n2,
-                };
-
-                // Vertices[i] = new Vertex(vc, Vector2.zero, Vector3.zero);
-            }
-        }
               
         void UpdateBufferIfNeeded()
         {

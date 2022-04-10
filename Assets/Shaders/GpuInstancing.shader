@@ -52,12 +52,12 @@
 
             v2f vert (appdata v, uint id : SV_InstanceID)
             {				
-				Vertex vx = _VertexBuffer[id].data[v.uv.x];
+				Vertex input = _VertexBuffer[id].data[v.uv.x];
 
                 v2f o;
-                o.vertex = UnityObjectToClipPos(float4(vx.vertex, 1));
-                o.uv = TRANSFORM_TEX(vx.uv, _MainTex);
-				o.normal = vx.normal;
+                o.vertex = UnityObjectToClipPos(float4(input.vertex, 1));
+                o.uv = TRANSFORM_TEX(input.uv, _MainTex);
+				o.normal = input.normal;
                 return o;
             }
 
