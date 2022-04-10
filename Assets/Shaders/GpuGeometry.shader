@@ -1,4 +1,4 @@
-﻿Shader "Firefly/Geometry"
+﻿Shader "Firefly/GpuGeometry"
 {
 	Properties
 	{
@@ -23,7 +23,7 @@
 			#pragma geometry Geometry
 			#pragma fragment Fragment
 			// #pragma multi_compile_prepassfinal noshadowmask nodynlightmap nodirlightmap nolightmap
-			#include "FireflyGeometry.cginc"
+			#include "GpuGeometry.cginc"
 			ENDCG
 		}			
 	}

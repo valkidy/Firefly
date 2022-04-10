@@ -10,7 +10,7 @@ namespace Firefly
         {
             p *= frequency;
 
-            uint frameCount = 6u * (uint)(p.sqrMagnitude + Time.frameCount);
+            uint frameCount = 6u * (uint)(p.sqrMagnitude);// + Time.frameCount);
 
             Vector3 grad1 = new Vector3(
                 Random.Value01(frameCount),
@@ -20,7 +20,7 @@ namespace Firefly
 
             p.z += 100;
 
-            frameCount = 6u * (uint)(p.sqrMagnitude + Time.frameCount);
+            frameCount = 6u * (uint)(p.sqrMagnitude); // + Time.frameCount);
 
             Vector3 grad2 = new Vector3(
                 Random.Value01(frameCount + 3),

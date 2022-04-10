@@ -102,7 +102,7 @@ namespace Firefly
 
                 _vertices.Add(new Vertex
                 {
-                    Position = vc,
+                    Position = vc
                 });
             }
         }

@@ -165,12 +165,12 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   TimeFlow: 0
-  VariantType: 1
+  VariantType: 0
   ParticleLife: 4
   ParticleSize: 0.36
   Frequency: 10
   Amplitude: 32
-  Material: {fileID: 2100000, guid: 7c9b428e58de80849a1d0cf0204eb94e, type: 2}
+  Material: {fileID: 2100000, guid: 7a90387e00104fa46a8597b00edfccaf, type: 2}
   mesh: {fileID: -2084928699955708009, guid: fdf1d42acd4b91d4398de873ee464ee7, type: 3}
   KernelShader: {fileID: 7200000, guid: 4d3f3a3edb3878840903e4123bcdbd8d, type: 3}
   GeometryMaterial: {fileID: 2100000, guid: b804b5381fa392e458885e0d3202b28c, type: 2}

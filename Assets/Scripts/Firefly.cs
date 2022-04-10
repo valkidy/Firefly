@@ -39,7 +39,8 @@ namespace Firefly
             if (VariantType == Type.GpuGeometry)
                 emitter = new ButterflyGpuGeometryParticle();
             else if (VariantType == Type.ParticleMesh)
-                emitter = new ButterflyMeshParticle();
+                emitter = new ButterflyGpuInstanceParticle();
+                // emitter = new ButterflyMeshParticle();
 
             emitter.OnInit(
                 new VariantData {
