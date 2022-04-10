@@ -165,7 +165,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   TimeFlow: 0
-  VariantType: 0
+  VariantType: 1
   ParticleLife: 4
   ParticleSize: 0.36
   Frequency: 10
