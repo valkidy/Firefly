@@ -21,14 +21,19 @@ Editor-->|Parameters from inspector|ParticleVariantData
 ParticleVariantData-->|Used to calculate particle size and lifetime|GeometryStage
 GeometryStage-->Output
 ```
-I also implemented a cpu version in order to correct the calculation of particle motion. To mix particle velocity 
-and inverse direction of the particle with the time direction, we can easily control the forward/reverse motion effects.
+At the beginning, I implemented a cpu version in order to modify the calculation of particle motion easily. Through mixing particle velocity 
+and inverse direction of the particle with the time direction, I can easily control the forward/reverse motion effects.
 
 ![Forward](Docs/forward.gif "Forward")
 ![Reverse](Docs/reverse.gif "Reverse")
 
-The cpu version is very slow when applying source mesh with huge vertives. After I move those works into gpu, then we 
-can apply on the huge mesh with better performance as well :-)
+But the cpu version is very slow when applying source mesh with large vertices, so I moved the calculations to Job System to improve the
+performance. 
+
+For rendering butterfly particles, I use Gpu Instancing then I can only modify vertex buffer through ComputeBuffer without submitting modified 
+mesh every frame. That also benefits when it needs to modify or validate the calculation of logic.
+
+But the fastest way is that we put all the calculations into gpu if readback isn't necessary :-)
 
 ![Reverse](Docs/geometry-shader-impl.gif "Implement with geometry shader")
 
